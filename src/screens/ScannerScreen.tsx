@@ -41,12 +41,12 @@ export default function ScannerScreen() {
 
   // Load rapid mode preference and media type
   useEffect(() => {
-    AsyncStorage.getItem(RAPID_MODE_KEY).then((value) => {
+    AsyncStorage.getItem(RAPID_MODE_KEY).then((value: string | null) => {
       if (value !== null) {
         setRapidMode(value === 'true');
       }
     });
-    AsyncStorage.getItem(MEDIA_TYPE_KEY).then((value) => {
+    AsyncStorage.getItem(MEDIA_TYPE_KEY).then((value: string | null) => {
       if (value !== null) {
         setSelectedMediaType(value as MediaType);
       }
@@ -105,6 +105,7 @@ export default function ScannerScreen() {
           // Normal Mode: Navigate to item detail
           setIsProcessing(false);
           setLastScannedUPC(null);
+          // @ts-expect-error - Navigation types need to be properly configured
           navigation.navigate('ItemDetail' as never, { itemId } as never);
         }
       } catch (error) {

@@ -253,6 +253,7 @@ export interface TMDbMovie {
 export interface OMDbMovie {
   Title: string;
   Year: string;
+  Rated?: string;
   Director?: string;
   Actors?: string;
   Plot?: string;
@@ -261,6 +262,7 @@ export interface OMDbMovie {
   Runtime?: string;
   imdbRating?: string;
   imdbID?: string;
+  Response?: string;
 }
 
 // IGDB (Video Games)

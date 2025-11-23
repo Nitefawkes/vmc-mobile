@@ -21,7 +21,14 @@ import {
   updateCatalogItem,
   deleteCatalogItem,
 } from '../database/catalogRepository';
-import { CatalogItem, ItemCondition, ActionTag } from '../types';
+import {
+  CatalogItem,
+  ItemCondition,
+  ActionTag,
+  isMusicMetadata,
+  isMovieMetadata,
+  isGameMetadata,
+} from '../types';
 import { UI_CONFIG, IMAGE_CONFIG } from '../constants';
 import PhotoGallery from '../components/PhotoGallery';
 
@@ -193,16 +200,51 @@ export default function ItemDetailScreen() {
       {/* Metadata Section */}
       <View style={styles.section}>
         <Text style={styles.title}>{item.metadata.title}</Text>
-        <Text style={styles.artist}>{item.metadata.artist}</Text>
-        {item.metadata.album && (
-          <Text style={styles.album}>Album: {item.metadata.album}</Text>
+
+        {/* Media-specific fields */}
+        {isMusicMetadata(item.metadata) && (
+          <>
+            <Text style={styles.artist}>{item.metadata.artist}</Text>
+            {item.metadata.album && (
+              <Text style={styles.album}>Album: {item.metadata.album}</Text>
+            )}
+            {item.metadata.label && (
+              <Text style={styles.info}>Label: {item.metadata.label}</Text>
+            )}
+          </>
         )}
+
+        {isMovieMetadata(item.metadata) && (
+          <>
+            {item.metadata.director && (
+              <Text style={styles.artist}>Director: {item.metadata.director}</Text>
+            )}
+            {item.metadata.studio && (
+              <Text style={styles.album}>Studio: {item.metadata.studio}</Text>
+            )}
+            {item.metadata.runtime && (
+              <Text style={styles.info}>Runtime: {item.metadata.runtime} min</Text>
+            )}
+          </>
+        )}
+
+        {isGameMetadata(item.metadata) && (
+          <>
+            {item.metadata.developer && (
+              <Text style={styles.artist}>Developer: {item.metadata.developer}</Text>
+            )}
+            {item.metadata.publisher && (
+              <Text style={styles.album}>Publisher: {item.metadata.publisher}</Text>
+            )}
+            {item.metadata.platform && (
+              <Text style={styles.info}>Platform: {item.metadata.platform}</Text>
+            )}
+          </>
+        )}
+
         <Text style={styles.info}>
           {item.metadata.year || 'Year Unknown'} • {item.format}
         </Text>
-        {item.metadata.label && (
-          <Text style={styles.info}>Label: {item.metadata.label}</Text>
-        )}
         <Text style={styles.info}>UPC: {item.upc}</Text>
       </View>
 

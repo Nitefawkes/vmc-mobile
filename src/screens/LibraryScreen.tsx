@@ -110,9 +110,10 @@ export default function LibraryScreen() {
     return (
       <TouchableOpacity
         style={styles.itemCard}
-        onPress={() =>
-          navigation.navigate('ItemDetail' as never, { itemId: item.id } as never)
-        }
+        onPress={() => {
+          // @ts-expect-error - Navigation types need to be properly configured
+          navigation.navigate('ItemDetail' as never, { itemId: item.id } as never);
+        }}
       >
         {item.metadata.coverArtUrl ? (
           <Image

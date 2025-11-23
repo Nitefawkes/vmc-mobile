@@ -49,7 +49,7 @@ export default function ScanPreviewSheet({
   isLoading = false,
 }: ScanPreviewSheetProps) {
   // Get default format based on media type
-  const getDefaultFormat = (): MusicFormat | MovieFormat | GamePlatform => {
+  const getDefaultFormat = React.useCallback((): MusicFormat | MovieFormat | GamePlatform => {
     switch (mediaType) {
       case MediaType.MUSIC:
         return MusicFormat.CASSETTE;
@@ -60,16 +60,16 @@ export default function ScanPreviewSheet({
       default:
         return MusicFormat.CASSETTE;
     }
-  };
+  }, [mediaType]);
 
   const [selectedFormat, setSelectedFormat] = React.useState<
     MusicFormat | MovieFormat | GamePlatform
-  >(getDefaultFormat());
+  >(() => getDefaultFormat());
 
   // Update format when media type changes
   React.useEffect(() => {
     setSelectedFormat(getDefaultFormat());
-  }, [mediaType]);
+  }, [getDefaultFormat]);
 
   if (!metadata && !isLoading) {
     return null;

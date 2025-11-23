@@ -31,6 +31,7 @@ export const SCAN_CONFIG = {
   DECODE_ACCURACY_TARGET: 0.95, // 95% accuracy
   SUPPORTED_BARCODE_FORMATS: ['upc_a', 'upc_e', 'ean_13', 'ean_8'],
   HAPTIC_FEEDBACK_ENABLED: true,
+  RAPID_MODE_DEFAULT: false,
 };
 
 // Sync settings

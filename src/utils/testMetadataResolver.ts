@@ -7,6 +7,7 @@
  */
 
 import { resolveMetadata } from '../services/metadataResolver';
+import { isMusicMetadata } from '../types';
 
 // Sample UPCs for testing (real cassette tape barcodes)
 const TEST_UPCS = {
@@ -39,10 +40,12 @@ export async function testSingleUPC(upc: string): Promise<void> {
 
     if (metadata) {
       console.log('✅ SUCCESS in', duration, 'ms');
-      console.log('Artist:', metadata.artist);
       console.log('Title:', metadata.title);
+      if (isMusicMetadata(metadata)) {
+        console.log('Artist:', metadata.artist);
+        console.log('Label:', metadata.label || 'Unknown');
+      }
       console.log('Year:', metadata.year || 'Unknown');
-      console.log('Label:', metadata.label || 'Unknown');
       console.log('Genre:', metadata.genre?.join(', ') || 'Unknown');
       console.log('Cover Art:', metadata.coverArtUrl ? 'Yes' : 'No');
     } else {
@@ -74,8 +77,11 @@ export async function runPhase0Tests(): Promise<void> {
 
       results.push({ upc, success, duration });
 
-      if (success) {
-        console.log(`✅ ${name}: ${metadata!.artist} - ${metadata!.title} (${duration}ms)`);
+      if (success && metadata) {
+        const displayText = isMusicMetadata(metadata)
+          ? `${metadata.artist} - ${metadata.title}`
+          : metadata.title;
+        console.log(`✅ ${name}: ${displayText} (${duration}ms)`);
       } else {
         console.log(`❌ ${name}: No metadata found (${duration}ms)`);
       }

@@ -86,7 +86,7 @@ export function fuzzySearchItem(query: string, item: CatalogItem): number {
     if (item.metadata.studio) {
       scores.push(fuzzyMatch(query, item.metadata.studio) * 1.0);
     }
-    if (item.metadata.cast) {
+    if (item.metadata.cast && item.metadata.cast.length > 0) {
       // Search through cast members
       const castScores = item.metadata.cast.map((actor) => fuzzyMatch(query, actor));
       scores.push(Math.max(...castScores) * 1.1);
@@ -104,8 +104,8 @@ export function fuzzySearchItem(query: string, item: CatalogItem): number {
   // Format (low weight)
   scores.push(fuzzyMatch(query, item.format) * 0.6);
 
-  // Return best match
-  return Math.max(...scores);
+  // Return best match (fallback to 0 if no scores)
+  return scores.length > 0 ? Math.max(...scores) : 0;
 }
 
 /**
