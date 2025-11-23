@@ -1,18 +1,19 @@
-# Vintage Music Catalog (VMC Mobile)
+# Vintage Media Catalog (VMC Mobile)
 
-A cross-platform mobile app for cataloging and managing vintage music collections through UPC barcode scanning and automated metadata enrichment.
+A cross-platform mobile app for cataloging and managing vintage media collections (Music, Movies, Video Games) through UPC barcode scanning and automated metadata enrichment.
 
 ## Overview
 
-**Current Phase:** Phase 1 - "MVP Scan → Catalog" ✅ COMPLETE
-**Status:** Full MVP Ready with Enhanced Features
+**Current Phase:** Multi-Media Expansion - "Music + Movies + Games" ✅ COMPLETE
+**Status:** Full Multi-Media Support Ready
 
-Vintage Music Catalog enables collectors to:
-- Scan UPC barcodes on cassettes, vinyl, CDs, and other vintage media
-- Automatically enrich items with metadata from Discogs and MusicBrainz
+Vintage Media Catalog enables collectors to:
+- Scan UPC barcodes on music (cassettes, vinyl, CDs), movies (VHS, DVD, Blu-ray), and video games (40+ platforms)
+- Automatically enrich items with metadata from Discogs, MusicBrainz, OMDb, and other APIs
 - Catalog items with condition tracking, location, and personal notes
 - Decide whether to sell, donate, or keep items
-- View collection statistics and estimated values
+- View collection statistics by media type and estimated values
+- Search across all media types with intelligent fuzzy matching
 
 ## Tech Stack
 
@@ -124,6 +125,19 @@ vmc-mobile/
 - [x] Optimistic UI updates
 - [x] Enhanced UX with immediate feedback
 
+### Multi-Media Expansion ✅ COMPLETE
+
+- [x] Support for Music, Movies, and Video Games
+- [x] Media type selector in scanner
+- [x] Dynamic format options (40+ game platforms, movie formats, music formats)
+- [x] Unified metadata resolver routing by media type
+- [x] Movie metadata resolver (OMDb API)
+- [x] Video game metadata resolver with fallback
+- [x] Media-specific field display (artist vs director vs developer)
+- [x] Multi-media fuzzy search with weighted scoring
+- [x] Media type filters in library
+- [x] Dashboard statistics by media type
+
 ### Phase 2: Offline & Batch (Upcoming)
 
 - [ ] Offline scan queue
@@ -155,15 +169,24 @@ See the implementation map for full roadmap including:
 |--------|------|-------------|
 | id | TEXT PRIMARY KEY | Unique identifier |
 | upc | TEXT | Barcode number |
-| artist | TEXT | Artist name |
-| title | TEXT | Album/release title |
-| format | TEXT | Media format (Cassette, Vinyl, etc.) |
+| media_type | TEXT | Media type (Music, Movie, Video Game) |
+| title | TEXT | Item title |
+| format | TEXT | Format (Cassette, VHS, NES, etc.) |
 | condition | TEXT | Condition (Mint, Good, Poor, etc.) |
 | action_tag | TEXT | Action (SELL, DONATE, KEEP, UNDECIDED) |
 | quantity | INTEGER | Number of copies |
 | estimated_value | REAL | Price estimate |
 | created_at | TEXT | Timestamp |
 | updated_at | TEXT | Timestamp |
+
+**Music-specific fields:**
+- artist, album, label, track_list, discogs_id, musicbrainz_id, duration
+
+**Movie-specific fields:**
+- director, studio, cast, rating, runtime, tmdb_id, imdb_id
+
+**Video Game-specific fields:**
+- developer, publisher, game_rating, players, igdb_id, platform
 
 ### pending_scans
 Queue for offline scans awaiting metadata resolution.
@@ -173,15 +196,32 @@ Cached marketplace price information from Discogs/eBay.
 
 ## API Integration
 
-### Discogs API
+### Music APIs
+
+**Discogs API**
 - **Endpoint:** `https://api.discogs.com`
-- **Purpose:** Primary metadata source
+- **Purpose:** Primary music metadata source
 - **Rate Limit:** 60 requests/minute (unauthenticated)
 
-### MusicBrainz API
+**MusicBrainz API**
 - **Endpoint:** `https://musicbrainz.org/ws/2`
-- **Purpose:** Fallback metadata source
+- **Purpose:** Fallback music metadata source
 - **Rate Limit:** 1 request/second
+
+### Movie APIs
+
+**OMDb API**
+- **Endpoint:** `https://www.omdbapi.com`
+- **Purpose:** Movie metadata by IMDb ID and title search
+- **Rate Limit:** 1,000 requests/day (free tier)
+- **Note:** Requires API key (configure in `src/constants/index.ts`)
+
+### Video Game APIs
+
+**IGDB (Twitch) API** - Future Implementation
+- **Purpose:** Video game metadata
+- **Note:** Requires OAuth2 authentication (planned for future release)
+- **Current:** Using fallback metadata system
 
 ## Performance Targets
 
