@@ -2,8 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useColorScheme } from 'react-native';
 import { HomeScreen } from '@screens/HomeScreen';
-import { ProductsScreen } from '@screens/ProductsScreen';
+import { ProductsStackNavigator } from './ProductsStackNavigator';
 import { PurchasesScreen } from '@screens/PurchasesScreen';
+import { SettingsScreen } from '@screens/SettingsScreen';
 import { Colors } from '@constants/colors';
 
 const Tab = createBottomTabNavigator();
@@ -40,7 +41,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Products"
-        component={ProductsScreen}
+        component={ProductsStackNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabIcon icon="🏷️" color={color} />,
           headerTitle: 'Price Tracker',
@@ -52,6 +53,14 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarIcon: ({ color }) => <TabIcon icon="🛍️" color={color} />,
           headerTitle: 'Purchase History',
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          tabBarIcon: ({ color }) => <TabIcon icon="⚙️" color={color} />,
+          headerTitle: 'Settings & Budgets',
         }}
       />
     </Tab.Navigator>

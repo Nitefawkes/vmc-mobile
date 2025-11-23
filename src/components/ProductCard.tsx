@@ -6,9 +6,10 @@ import { Colors } from '@constants/colors';
 interface ProductCardProps {
   product: Product;
   onPress: (product: Product) => void;
+  onLongPress?: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onLongPress }) => {
   const isDarkMode = useColorScheme() === 'dark';
   const colors = isDarkMode ? Colors.dark : Colors.light;
 
@@ -24,6 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
     <TouchableOpacity
       style={[styles.container, { backgroundColor: colors.background, borderColor: colors.border }]}
       onPress={() => onPress(product)}
+      onLongPress={() => onLongPress?.(product)}
       activeOpacity={0.7}>
       <View style={styles.content}>
         <View style={styles.header}>

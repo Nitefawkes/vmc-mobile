@@ -11,13 +11,24 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { ProductsStackParamList } from '@navigation/ProductsStackNavigator';
 import { Product, ProductCategory } from '@types/product';
 import { ProductService } from '@services/product.service';
 import { ProductCard } from '@components/ProductCard';
 import { EmptyState } from '@components/EmptyState';
 import { Colors } from '@constants/colors';
 
-export const ProductsScreen: React.FC = () => {
+type ProductsScreenNavigationProp = StackNavigationProp<
+  ProductsStackParamList,
+  'ProductsList'
+>;
+
+interface ProductsScreenProps {
+  navigation: ProductsScreenNavigationProp;
+}
+
+export const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
   const isDarkMode = useColorScheme() === 'dark';
   const colors = isDarkMode ? Colors.dark : Colors.light;
 
@@ -165,7 +176,11 @@ export const ProductsScreen: React.FC = () => {
             <ProductCard
               product={item}
               onPress={product => {
+                navigation.navigate('ProductDetail', { productId: product.id });
+              }}
+              onLongPress={product => {
                 Alert.alert(product.name, 'Choose an action', [
+                  { text: 'View Details', onPress: () => navigation.navigate('ProductDetail', { productId: product.id }) },
                   { text: 'Edit', onPress: () => handleEditProduct(product) },
                   { text: 'Delete', onPress: () => handleDeleteProduct(product), style: 'destructive' },
                   { text: 'Cancel', style: 'cancel' },

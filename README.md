@@ -12,16 +12,27 @@ A modern React Native mobile application for **price tracking and purchase manag
 ### 🏷️ Price Tracking
 - Track product prices over time
 - Set target prices and get notified of good deals
-- View price history and trends
-- Compare prices across multiple retailers
-- Monitor price changes with detailed statistics
+- **View detailed price history with interactive charts**
+- **Navigate to product detail screen for in-depth analysis**
+- Monitor price changes with detailed statistics (min, max, average)
+- **Update prices manually and track historical trends**
+- Compare current price vs target price visually
 
 ### 🛍️ Purchase Management
 - Record all your purchases in one place
-- Track spending by category
+- Track spending by category (10 predefined categories)
 - View purchase history with detailed information
 - Search and filter purchases
 - Analyze spending patterns
+- **View spending summary with total spent and average purchase**
+
+### 💰 Budget Management (NEW!)
+- **Set monthly budgets for each category**
+- **Real-time budget tracking with visual progress bars**
+- **Color-coded alerts when approaching or exceeding budget**
+- **View all active budgets at a glance**
+- Percentage-based budget utilization
+- Over-budget detection and warnings
 
 ### 📊 Analytics & Insights
 - View total spending across all categories
@@ -29,13 +40,22 @@ A modern React Native mobile application for **price tracking and purchase manag
 - See average purchase amounts
 - Identify top spending categories
 - Get insights into buying habits
+- **Interactive price charts showing historical trends**
+- **Budget vs actual spending comparisons**
+
+### ⚙️ Settings & Data Management
+- **Comprehensive settings screen**
+- **Data management (clear all data)**
+- App information and version display
+- Budget configuration interface
 
 ### 💎 Technical Features
 
 - ✅ **React Native 0.76.5** - Latest stable version
 - ✅ **TypeScript** - Full type safety and IntelliSense
-- ✅ **React Navigation** - Tab-based navigation with 3 screens
+- ✅ **React Navigation** - Stack and tab navigation with 4 tabs
 - ✅ **AsyncStorage** - Persistent local data storage
+- ✅ **Interactive Charts** - Custom-built price history visualization
 - ✅ **ESLint & Prettier** - Code quality and formatting
 - ✅ **Jest & React Native Testing Library** - Comprehensive testing setup
 - ✅ **Path Aliases** - Clean imports with `@components`, `@screens`, etc.
