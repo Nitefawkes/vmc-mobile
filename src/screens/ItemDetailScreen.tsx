@@ -1,6 +1,6 @@
 /**
- * Item Detail Screen
- * View and edit catalog item details
+ * Item Detail Screen - Phase 1 Enhanced
+ * View and edit catalog item details with photo gallery
  */
 
 import React, { useState, useEffect } from 'react';
@@ -15,13 +15,15 @@ import {
   Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import {
   getCatalogItemById,
   updateCatalogItem,
   deleteCatalogItem,
 } from '../database/catalogRepository';
 import { CatalogItem, ItemCondition, ActionTag } from '../types';
-import { UI_CONFIG } from '../constants';
+import { UI_CONFIG, IMAGE_CONFIG } from '../constants';
+import PhotoGallery from '../components/PhotoGallery';
 
 export default function ItemDetailScreen() {
   const route = useRoute();
@@ -31,6 +33,7 @@ export default function ItemDetailScreen() {
   const [item, setItem] = useState<CatalogItem | null>(null);
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     loadItem();
@@ -43,10 +46,67 @@ export default function ItemDetailScreen() {
         setItem(data);
         setNotes(data.notes || '');
         setLocation(data.location || '');
+        setPhotos(data.photos || []);
       }
     } catch (error) {
       console.error('[ItemDetail] Error loading item:', error);
     }
+  };
+
+  // Handle photo picking
+  const handleAddPhoto = async () => {
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library.');
+        return;
+      }
+
+      // Launch picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: IMAGE_CONFIG.COMPRESSION_QUALITY,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newPhotos = [...photos, result.assets[0].uri];
+        setPhotos(newPhotos);
+
+        // Save immediately with optimistic update
+        if (item) {
+          await updateCatalogItem(item.id, { photos: newPhotos });
+          setItem({ ...item, photos: newPhotos });
+        }
+      }
+    } catch (error) {
+      console.error('[ItemDetail] Error adding photo:', error);
+      Alert.alert('Error', 'Failed to add photo.');
+    }
+  };
+
+  // Handle photo removal
+  const handleRemovePhoto = async (index: number) => {
+    Alert.alert('Remove Photo', 'Are you sure you want to remove this photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const newPhotos = photos.filter((_, i) => i !== index);
+          setPhotos(newPhotos);
+
+          // Save immediately
+          if (item) {
+            await updateCatalogItem(item.id, { photos: newPhotos });
+            setItem({ ...item, photos: newPhotos });
+          }
+        },
+      },
+    ]);
   };
 
   const handleUpdateCondition = async (condition: ItemCondition) => {
@@ -196,6 +256,16 @@ export default function ItemDetailScreen() {
             </TouchableOpacity>
           ))}
         </View>
+      </View>
+
+      {/* Photo Gallery */}
+      <View style={styles.section}>
+        <PhotoGallery
+          photos={photos}
+          onAddPhoto={handleAddPhoto}
+          onRemovePhoto={handleRemovePhoto}
+          editable={true}
+        />
       </View>
 
       {/* Location Input */}

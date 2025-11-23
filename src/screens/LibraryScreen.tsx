@@ -1,9 +1,9 @@
 /**
- * Library Screen
- * Browse and search catalog items
+ * Library Screen - Phase 1 Enhanced
+ * Browse and search catalog items with fuzzy search and format filters
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,24 +13,26 @@ import {
   TouchableOpacity,
   Image,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getCatalogItems } from '../database/catalogRepository';
-import { CatalogItem } from '../types';
+import { CatalogItem, MusicFormat, ActionTag } from '../types';
 import { UI_CONFIG } from '../constants';
+import { filterByFuzzySearch } from '../utils/fuzzySearch';
 
 export default function LibraryScreen() {
-  const [items, setItems] = useState<CatalogItem[]>([]);
+  const [allItems, setAllItems] = useState<CatalogItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFormat, setSelectedFormat] = useState<MusicFormat | 'ALL'>('ALL');
+  const [selectedActionTag, setSelectedActionTag] = useState<ActionTag | 'ALL'>('ALL');
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
 
   const loadItems = async () => {
     try {
-      const data = await getCatalogItems({
-        searchQuery: searchQuery || undefined,
-      });
-      setItems(data);
+      const data = await getCatalogItems();
+      setAllItems(data);
     } catch (error) {
       console.error('[Library] Error loading items:', error);
     }
@@ -39,8 +41,38 @@ export default function LibraryScreen() {
   useFocusEffect(
     React.useCallback(() => {
       loadItems();
-    }, [searchQuery])
+    }, [])
   );
+
+  // Filter and search items
+  const filteredItems = useMemo(() => {
+    let result = allItems;
+
+    // Apply format filter
+    if (selectedFormat !== 'ALL') {
+      result = result.filter((item) => item.format === selectedFormat);
+    }
+
+    // Apply action tag filter
+    if (selectedActionTag !== 'ALL') {
+      result = result.filter((item) => item.actionTag === selectedActionTag);
+    }
+
+    // Apply fuzzy search
+    if (searchQuery.trim()) {
+      result = filterByFuzzySearch(
+        result.map((item) => ({
+          ...item,
+          artist: item.metadata.artist,
+          title: item.metadata.title,
+          album: item.metadata.album,
+        })),
+        searchQuery
+      );
+    }
+
+    return result;
+  }, [allItems, searchQuery, selectedFormat, selectedActionTag]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -99,16 +131,85 @@ export default function LibraryScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by artist, title, or album..."
+          placeholder="Fuzzy search: artist, title, album..."
           placeholderTextColor={UI_CONFIG.THEME.TEXT_SECONDARY}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
+      {/* Format Filters */}
+      <View style={styles.filtersContainer}>
+        <Text style={styles.filterLabel}>Format:</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, selectedFormat === 'ALL' && styles.filterChipActive]}
+            onPress={() => setSelectedFormat('ALL')}
+          >
+            <Text style={[styles.filterChipText, selectedFormat === 'ALL' && styles.filterChipTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          {Object.values(MusicFormat).map((format) => (
+            <TouchableOpacity
+              key={format}
+              style={[styles.filterChip, selectedFormat === format && styles.filterChipActive]}
+              onPress={() => setSelectedFormat(format)}
+            >
+              <Text style={[styles.filterChipText, selectedFormat === format && styles.filterChipTextActive]}>
+                {format}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Action Tag Filters */}
+      <View style={styles.filtersContainer}>
+        <Text style={styles.filterLabel}>Action:</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, selectedActionTag === 'ALL' && styles.filterChipActive]}
+            onPress={() => setSelectedActionTag('ALL')}
+          >
+            <Text style={[styles.filterChipText, selectedActionTag === 'ALL' && styles.filterChipTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          {Object.values(ActionTag).map((tag) => (
+            <TouchableOpacity
+              key={tag}
+              style={[styles.filterChip, selectedActionTag === tag && styles.filterChipActive]}
+              onPress={() => setSelectedActionTag(tag)}
+            >
+              <Text style={[styles.filterChipText, selectedActionTag === tag && styles.filterChipTextActive]}>
+                {tag}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Results Count */}
+      {(searchQuery || selectedFormat !== 'ALL' || selectedActionTag !== 'ALL') && (
+        <View style={styles.resultsCount}>
+          <Text style={styles.resultsCountText}>
+            {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} found
+          </Text>
+        </View>
+      )}
+
       {/* Item List */}
       <FlatList
-        data={items}
+        data={filteredItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
@@ -119,7 +220,9 @@ export default function LibraryScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No items found</Text>
             <Text style={styles.emptySubtext}>
-              Start scanning to build your catalog!
+              {allItems.length === 0
+                ? 'Start scanning to build your catalog!'
+                : 'Try different filters or search terms'}
             </Text>
           </View>
         }
@@ -135,6 +238,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 15,
+    paddingBottom: 10,
     backgroundColor: UI_CONFIG.THEME.SECONDARY,
   },
   searchInput: {
@@ -143,6 +247,50 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     fontSize: 16,
+  },
+  filtersContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: UI_CONFIG.THEME.SECONDARY,
+  },
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+    marginBottom: 8,
+  },
+  filterScroll: {
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: UI_CONFIG.THEME.PRIMARY,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  filterChipActive: {
+    backgroundColor: UI_CONFIG.THEME.ACCENT,
+    borderColor: UI_CONFIG.THEME.SUCCESS,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+  },
+  filterChipTextActive: {
+    color: UI_CONFIG.THEME.TEXT_PRIMARY,
+  },
+  resultsCount: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: UI_CONFIG.THEME.PRIMARY,
+  },
+  resultsCountText: {
+    fontSize: 12,
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+    fontStyle: 'italic',
   },
   listContainer: {
     padding: 15,
