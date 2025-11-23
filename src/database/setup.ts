@@ -18,21 +18,45 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
 
   db = await SQLite.openDatabaseAsync(DB_CONFIG.NAME);
 
-  // Create catalog_items table
+  // Create catalog_items table (supports Music, Movies, Video Games)
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS catalog_items (
       id TEXT PRIMARY KEY,
       upc TEXT NOT NULL,
-      artist TEXT NOT NULL,
+      media_type TEXT NOT NULL DEFAULT 'Music',
       title TEXT NOT NULL,
-      album TEXT,
       year INTEGER,
       genre TEXT,
-      label TEXT,
       cover_art_url TEXT,
+      description TEXT,
+
+      -- Music fields
+      artist TEXT,
+      album TEXT,
+      label TEXT,
       track_list TEXT,
       discogs_id TEXT,
       musicbrainz_id TEXT,
+      duration INTEGER,
+
+      -- Movie fields
+      director TEXT,
+      studio TEXT,
+      cast TEXT,
+      rating TEXT,
+      runtime INTEGER,
+      tmdb_id TEXT,
+      imdb_id TEXT,
+
+      -- Video Game fields
+      developer TEXT,
+      publisher TEXT,
+      game_rating TEXT,
+      players TEXT,
+      igdb_id TEXT,
+      platform TEXT,
+
+      -- Common fields
       format TEXT NOT NULL,
       condition TEXT NOT NULL,
       action_tag TEXT NOT NULL,
@@ -46,6 +70,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       needs_sync INTEGER DEFAULT 0
     );
     CREATE INDEX IF NOT EXISTS idx_catalog_upc ON catalog_items(upc);
+    CREATE INDEX IF NOT EXISTS idx_catalog_media_type ON catalog_items(media_type);
     CREATE INDEX IF NOT EXISTS idx_catalog_action_tag ON catalog_items(action_tag);
     CREATE INDEX IF NOT EXISTS idx_catalog_format ON catalog_items(format);
   `);
@@ -55,6 +80,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     CREATE TABLE IF NOT EXISTS pending_scans (
       id TEXT PRIMARY KEY,
       upc TEXT NOT NULL,
+      media_type TEXT DEFAULT 'Music',
       scanned_at TEXT NOT NULL,
       pending INTEGER DEFAULT 1,
       retry_count INTEGER DEFAULT 0,
@@ -67,6 +93,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS price_data (
       upc TEXT PRIMARY KEY,
+      media_type TEXT NOT NULL DEFAULT 'Music',
       median_price REAL,
       min_price REAL,
       max_price REAL,
