@@ -1,16 +1,41 @@
 # VMC Mobile
 
-A modern React Native mobile application built with TypeScript, featuring a robust development setup with testing, linting, and CI/CD integration.
+A modern React Native mobile application for **price tracking and purchase management**. Track product prices over time, set price alerts, and analyze your spending habits—all in one place.
 
 [![CI](https://github.com/Nitefawkes/vmc-mobile/workflows/CI/badge.svg)](https://github.com/Nitefawkes/vmc-mobile/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![React Native](https://img.shields.io/badge/React%20Native-0.76.5-blue.svg)](https://reactnative.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue.svg)](https://www.typescriptlang.org/)
 
-## Features
+## App Features
+
+### 🏷️ Price Tracking
+- Track product prices over time
+- Set target prices and get notified of good deals
+- View price history and trends
+- Compare prices across multiple retailers
+- Monitor price changes with detailed statistics
+
+### 🛍️ Purchase Management
+- Record all your purchases in one place
+- Track spending by category
+- View purchase history with detailed information
+- Search and filter purchases
+- Analyze spending patterns
+
+### 📊 Analytics & Insights
+- View total spending across all categories
+- Track monthly spending trends
+- See average purchase amounts
+- Identify top spending categories
+- Get insights into buying habits
+
+### 💎 Technical Features
 
 - ✅ **React Native 0.76.5** - Latest stable version
 - ✅ **TypeScript** - Full type safety and IntelliSense
+- ✅ **React Navigation** - Tab-based navigation with 3 screens
+- ✅ **AsyncStorage** - Persistent local data storage
 - ✅ **ESLint & Prettier** - Code quality and formatting
 - ✅ **Jest & React Native Testing Library** - Comprehensive testing setup
 - ✅ **Path Aliases** - Clean imports with `@components`, `@screens`, etc.
