@@ -304,6 +304,17 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={[styles.actionButton, styles.toolButton]}
               onPress={() => {
+                // @ts-expect-error - Navigation types
+                navigation.navigate('Analytics');
+              }}
+            >
+              <Text style={styles.actionButtonText}>📊 Analytics</Text>
+              <Text style={styles.toolDescription}>View detailed collection insights</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.toolButton]}
+              onPress={() => {
                 navigation.navigate('Wishlist' as never);
               }}
             >

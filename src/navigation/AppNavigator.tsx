@@ -7,6 +7,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { UI_CONFIG } from '../constants';
 
 // Import screens (will be created next)
@@ -17,6 +18,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import WishlistScreen from '../screens/WishlistScreen';
 import QuickLookupScreen from '../screens/QuickLookupScreen';
 import SellModeScreen from '../screens/SellModeScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
 
 // Navigation type definitions
 export type RootStackParamList = {
@@ -24,6 +26,7 @@ export type RootStackParamList = {
   ItemDetail: { itemId: string };
   QuickLookup: undefined;
   SellMode: undefined;
+  Analytics: undefined;
 };
 
 export type TabParamList = {
@@ -59,6 +62,9 @@ function MainTabs() {
         component={DashboardScreen}
         options={{
           title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="grid-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -67,6 +73,9 @@ function MainTabs() {
         options={{
           title: 'Scan',
           headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="barcode-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -74,6 +83,9 @@ function MainTabs() {
         component={LibraryScreen}
         options={{
           title: 'Library',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="albums-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -81,6 +93,9 @@ function MainTabs() {
         component={WishlistScreen}
         options={{
           title: 'Wishlist',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="heart-outline" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -120,6 +135,11 @@ export default function AppNavigator() {
           name="SellMode"
           component={SellModeScreen}
           options={{ title: 'Sell Mode' }}
+        />
+        <Stack.Screen
+          name="Analytics"
+          component={AnalyticsScreen}
+          options={{ title: 'Collection Analytics' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

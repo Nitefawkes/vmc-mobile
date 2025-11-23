@@ -308,3 +308,24 @@ export async function getCollectionGrowthRate(): Promise<{
     monthlyBreakdown: sortedMonths,
   };
 }
+
+/**
+ * Get top performing items by ROI
+ */
+export async function getTopPerformers(limit: number = 10): Promise<CatalogItem[]> {
+  const allItems = await getCatalogItems();
+
+  // Filter items with both purchase price and estimated value
+  const itemsWithROI = allItems.filter(
+    (item) => item.purchasePrice && item.estimatedValue && item.purchasePrice > 0
+  );
+
+  // Sort by ROI (highest first)
+  itemsWithROI.sort((a, b) => {
+    const roiA = ((a.estimatedValue! - a.purchasePrice!) / a.purchasePrice!) * 100;
+    const roiB = ((b.estimatedValue! - b.purchasePrice!) / b.purchasePrice!) * 100;
+    return roiB - roiA;
+  });
+
+  return itemsWithROI.slice(0, limit);
+}
