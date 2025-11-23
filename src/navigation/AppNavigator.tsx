@@ -14,6 +14,7 @@ import ScannerScreen from '../screens/ScannerScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import WishlistScreen from '../screens/WishlistScreen';
 
 // Navigation type definitions
 export type RootStackParamList = {
@@ -25,6 +26,7 @@ export type TabParamList = {
   Dashboard: undefined;
   Scanner: undefined;
   Library: undefined;
+  Wishlist: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -68,6 +70,13 @@ function MainTabs() {
         component={LibraryScreen}
         options={{
           title: 'Library',
+        }}
+      />
+      <Tab.Screen
+        name="Wishlist"
+        component={WishlistScreen}
+        options={{
+          title: 'Wishlist',
         }}
       />
     </Tab.Navigator>

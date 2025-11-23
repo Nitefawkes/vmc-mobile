@@ -182,11 +182,33 @@ export interface CatalogItem {
   location?: string;
   notes?: string;
   photos?: string[];
+  customTags?: string[]; // Custom organizational tags
   quantity: number;
   estimatedValue?: number;
+  acquisitionDate?: Date; // When item was acquired
+  purchasePrice?: number; // Original purchase price
   createdAt: Date;
   updatedAt: Date;
   needsSync: boolean;
+}
+
+// Wishlist item - items collector wants to acquire
+export interface WishlistItem {
+  id: string;
+  upc?: string; // Optional - might not know UPC yet
+  mediaType: MediaType;
+  title: string;
+  artist?: string; // For music
+  director?: string; // For movies
+  developer?: string; // For games
+  format?: MusicFormat | MovieFormat | GamePlatform;
+  year?: number;
+  maxPrice?: number; // Maximum willing to pay
+  priority: 'low' | 'medium' | 'high';
+  notes?: string;
+  coverArtUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Pending scan queue item

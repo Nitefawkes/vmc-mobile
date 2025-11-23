@@ -39,6 +39,7 @@ export async function insertCatalogItem(
     'id', 'upc', 'media_type', 'title', 'year', 'genre',
     'cover_art_url', 'description', 'format', 'condition', 'action_tag',
     'location', 'notes', 'photos', 'quantity', 'estimated_value',
+    'custom_tags', 'acquisition_date', 'purchase_price',
     'created_at', 'updated_at', 'needs_sync'
   ];
 
@@ -59,6 +60,9 @@ export async function insertCatalogItem(
     item.photos ? JSON.stringify(item.photos) : null,
     item.quantity,
     item.estimatedValue || null,
+    item.customTags ? JSON.stringify(item.customTags) : null,
+    item.acquisitionDate ? item.acquisitionDate.toISOString() : null,
+    item.purchasePrice || null,
     now,
     now,
     item.needsSync ? 1 : 0,
@@ -212,6 +216,21 @@ export async function updateCatalogItem(
     params.push(JSON.stringify(updates.photos));
   }
 
+  if (updates.customTags !== undefined) {
+    setClauses.push('custom_tags = ?');
+    params.push(updates.customTags ? JSON.stringify(updates.customTags) : null);
+  }
+
+  if (updates.acquisitionDate !== undefined) {
+    setClauses.push('acquisition_date = ?');
+    params.push(updates.acquisitionDate ? updates.acquisitionDate.toISOString() : null);
+  }
+
+  if (updates.purchasePrice !== undefined) {
+    setClauses.push('purchase_price = ?');
+    params.push(updates.purchasePrice);
+  }
+
   setClauses.push('updated_at = ?');
   params.push(now);
 
@@ -353,8 +372,11 @@ function mapRowToCatalogItem(row: any): CatalogItem {
     location: row.location,
     notes: row.notes,
     photos: row.photos ? JSON.parse(row.photos) : undefined,
+    customTags: row.custom_tags ? JSON.parse(row.custom_tags) : undefined,
     quantity: row.quantity,
     estimatedValue: row.estimated_value,
+    acquisitionDate: row.acquisition_date ? new Date(row.acquisition_date) : undefined,
+    purchasePrice: row.purchase_price,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     needsSync: row.needs_sync === 1,

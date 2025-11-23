@@ -65,6 +65,12 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       photos TEXT,
       quantity INTEGER DEFAULT 1,
       estimated_value REAL,
+
+      -- Collector features
+      custom_tags TEXT,
+      acquisition_date TEXT,
+      purchase_price REAL,
+
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       needs_sync INTEGER DEFAULT 0
@@ -74,6 +80,19 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     CREATE INDEX IF NOT EXISTS idx_catalog_action_tag ON catalog_items(action_tag);
     CREATE INDEX IF NOT EXISTS idx_catalog_format ON catalog_items(format);
   `);
+
+  // Add new columns if upgrading from old schema
+  await db.execAsync(`
+    ALTER TABLE catalog_items ADD COLUMN custom_tags TEXT;
+  `).catch(() => {}); // Ignore if column exists
+
+  await db.execAsync(`
+    ALTER TABLE catalog_items ADD COLUMN acquisition_date TEXT;
+  `).catch(() => {});
+
+  await db.execAsync(`
+    ALTER TABLE catalog_items ADD COLUMN purchase_price REAL;
+  `).catch(() => {});
 
   // Create pending_scans table for offline queue
   await db.execAsync(`
@@ -101,6 +120,29 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       last_updated TEXT NOT NULL,
       source TEXT NOT NULL
     );
+  `);
+
+  // Create wishlist_items table for wanted items
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS wishlist_items (
+      id TEXT PRIMARY KEY,
+      upc TEXT,
+      media_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      artist TEXT,
+      director TEXT,
+      developer TEXT,
+      format TEXT,
+      year INTEGER,
+      max_price REAL,
+      priority TEXT NOT NULL DEFAULT 'medium',
+      notes TEXT,
+      cover_art_url TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_wishlist_media_type ON wishlist_items(media_type);
+    CREATE INDEX IF NOT EXISTS idx_wishlist_priority ON wishlist_items(priority);
   `);
 
   console.log('Database initialized successfully');

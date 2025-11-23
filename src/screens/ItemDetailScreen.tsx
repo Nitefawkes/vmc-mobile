@@ -41,6 +41,10 @@ export default function ItemDetailScreen() {
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [acquisitionDate, setAcquisitionDate] = useState<Date | null>(null);
 
   useEffect(() => {
     loadItem();
@@ -54,6 +58,9 @@ export default function ItemDetailScreen() {
         setNotes(data.notes || '');
         setLocation(data.location || '');
         setPhotos(data.photos || []);
+        setCustomTags(data.customTags || []);
+        setPurchasePrice(data.purchasePrice?.toString() || '');
+        setAcquisitionDate(data.acquisitionDate || null);
       }
     } catch (error) {
       console.error('[ItemDetail] Error loading item:', error);
@@ -142,12 +149,36 @@ export default function ItemDetailScreen() {
     if (!item) return;
 
     try {
-      await updateCatalogItem(item.id, { notes, location });
-      Alert.alert('Success', 'Notes and location saved!');
+      const updates: any = { notes, location, customTags };
+
+      if (purchasePrice) {
+        updates.purchasePrice = parseFloat(purchasePrice);
+      }
+
+      if (acquisitionDate) {
+        updates.acquisitionDate = acquisitionDate;
+      }
+
+      await updateCatalogItem(item.id, updates);
+      Alert.alert('Success', 'Item details saved!');
     } catch (error) {
-      console.error('[ItemDetail] Error saving notes:', error);
-      Alert.alert('Error', 'Failed to save notes');
+      console.error('[ItemDetail] Error saving details:', error);
+      Alert.alert('Error', 'Failed to save details');
     }
+  };
+
+  const handleAddTag = () => {
+    if (!newTag.trim()) return;
+
+    const tag = newTag.trim();
+    if (!customTags.includes(tag)) {
+      setCustomTags([...customTags, tag]);
+    }
+    setNewTag('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setCustomTags(customTags.filter((t) => t !== tag));
   };
 
   const handleDelete = async () => {
@@ -334,8 +365,106 @@ export default function ItemDetailScreen() {
           multiline
           numberOfLines={4}
         />
+      </View>
+
+      {/* Collector Fields */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Custom Tags</Text>
+        <View style={styles.tagsContainer}>
+          {customTags.map((tag) => (
+            <TouchableOpacity
+              key={tag}
+              style={styles.tag}
+              onPress={() => handleRemoveTag(tag)}
+            >
+              <Text style={styles.tagText}>{tag}</Text>
+              <Text style={styles.tagRemove}> ✕</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.tagInputRow}>
+          <TextInput
+            style={[styles.input, styles.tagInput]}
+            placeholder="Add custom tag..."
+            placeholderTextColor={UI_CONFIG.THEME.TEXT_SECONDARY}
+            value={newTag}
+            onChangeText={setNewTag}
+            onSubmitEditing={handleAddTag}
+          />
+          <TouchableOpacity style={styles.addTagButton} onPress={handleAddTag}>
+            <Text style={styles.addTagButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Purchase Price</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Original purchase price"
+          placeholderTextColor={UI_CONFIG.THEME.TEXT_SECONDARY}
+          value={purchasePrice}
+          onChangeText={setPurchasePrice}
+          keyboardType="decimal-pad"
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Acquisition Date</Text>
+        <Text style={styles.info}>
+          {acquisitionDate
+            ? acquisitionDate.toLocaleDateString()
+            : item?.createdAt.toLocaleDateString() || 'Not set'}
+        </Text>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setAcquisitionDate(new Date())}
+        >
+          <Text style={styles.dateButtonText}>Set to Today</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Collector Value Summary */}
+      {(item?.purchasePrice || purchasePrice) && item?.estimatedValue && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Value Summary</Text>
+          <View style={styles.valueRow}>
+            <Text style={styles.valueLabel}>Purchase Price:</Text>
+            <Text style={styles.valueAmount}>
+              ${(item.purchasePrice || parseFloat(purchasePrice) || 0).toFixed(2)}
+            </Text>
+          </View>
+          <View style={styles.valueRow}>
+            <Text style={styles.valueLabel}>Estimated Value:</Text>
+            <Text style={styles.valueAmount}>${item.estimatedValue.toFixed(2)}</Text>
+          </View>
+          <View style={[styles.valueRow, styles.profitRow]}>
+            <Text style={[styles.valueLabel, styles.profitLabel]}>Potential Profit:</Text>
+            <Text
+              style={[
+                styles.valueAmount,
+                styles.profitAmount,
+                {
+                  color:
+                    item.estimatedValue - (item.purchasePrice || parseFloat(purchasePrice) || 0) > 0
+                      ? UI_CONFIG.THEME.SUCCESS
+                      : UI_CONFIG.THEME.ERROR,
+                },
+              ]}
+            >
+              $
+              {(
+                item.estimatedValue -
+                (item.purchasePrice || parseFloat(purchasePrice) || 0)
+              ).toFixed(2)}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.section}>
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveNotes}>
-          <Text style={styles.saveButtonText}>Save Notes & Location</Text>
+          <Text style={styles.saveButtonText}>Save All Changes</Text>
         </TouchableOpacity>
       </View>
 
@@ -466,5 +595,87 @@ const styles = StyleSheet.create({
     color: UI_CONFIG.THEME.TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 10,
+  },
+  tag: {
+    backgroundColor: UI_CONFIG.THEME.ACCENT + '33',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagText: {
+    color: UI_CONFIG.THEME.TEXT_PRIMARY,
+    fontSize: 14,
+  },
+  tagRemove: {
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagInput: {
+    flex: 1,
+    marginRight: 10,
+  },
+  addTagButton: {
+    backgroundColor: UI_CONFIG.THEME.ACCENT,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addTagButtonText: {
+    color: UI_CONFIG.THEME.TEXT_PRIMARY,
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  dateButton: {
+    backgroundColor: UI_CONFIG.THEME.SECONDARY,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  dateButtonText: {
+    color: UI_CONFIG.THEME.TEXT_PRIMARY,
+    fontSize: 14,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  valueLabel: {
+    fontSize: 16,
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+  },
+  valueAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: UI_CONFIG.THEME.TEXT_PRIMARY,
+  },
+  profitRow: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: UI_CONFIG.THEME.SECONDARY,
+  },
+  profitLabel: {
+    fontWeight: 'bold',
+  },
+  profitAmount: {
+    fontSize: 18,
   },
 });
