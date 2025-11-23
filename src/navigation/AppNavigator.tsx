@@ -15,11 +15,15 @@ import LibraryScreen from '../screens/LibraryScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import WishlistScreen from '../screens/WishlistScreen';
+import QuickLookupScreen from '../screens/QuickLookupScreen';
+import SellModeScreen from '../screens/SellModeScreen';
 
 // Navigation type definitions
 export type RootStackParamList = {
   MainTabs: undefined;
   ItemDetail: { itemId: string };
+  QuickLookup: undefined;
+  SellMode: undefined;
 };
 
 export type TabParamList = {
@@ -106,6 +110,16 @@ export default function AppNavigator() {
           name="ItemDetail"
           component={ItemDetailScreen}
           options={{ title: 'Item Details' }}
+        />
+        <Stack.Screen
+          name="QuickLookup"
+          component={QuickLookupScreen}
+          options={{ title: 'Quick Lookup' }}
+        />
+        <Stack.Screen
+          name="SellMode"
+          component={SellModeScreen}
+          options={{ title: 'Sell Mode' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

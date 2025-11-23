@@ -272,6 +272,45 @@ export default function DashboardScreen() {
               <Text style={styles.actionButtonText}>📚 Browse Library</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Journey-Focused Tools */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🎯 Collector Tools</Text>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.toolButton]}
+              onPress={() => {
+                // @ts-expect-error - Navigation types
+                navigation.navigate('QuickLookup');
+              }}
+            >
+              <Text style={styles.actionButtonText}>🔍 Quick Lookup</Text>
+              <Text style={styles.toolDescription}>Check if you own an item while shopping</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.toolButton]}
+              onPress={() => {
+                // @ts-expect-error - Navigation types
+                navigation.navigate('SellMode');
+              }}
+            >
+              <Text style={styles.actionButtonText}>🏷️ Sell Mode</Text>
+              <Text style={styles.toolDescription}>
+                Manage items for sale • {stats.itemsToSell} items ready
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.toolButton]}
+              onPress={() => {
+                navigation.navigate('Wishlist' as never);
+              }}
+            >
+              <Text style={styles.actionButtonText}>🎯 Wishlist</Text>
+              <Text style={styles.toolDescription}>Track items you want to acquire</Text>
+            </TouchableOpacity>
+          </View>
         </>
       )}
     </ScrollView>
@@ -489,5 +528,15 @@ const styles = StyleSheet.create({
     color: UI_CONFIG.THEME.TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  toolButton: {
+    paddingVertical: 20,
+    alignItems: 'flex-start',
+  },
+  toolDescription: {
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+    fontSize: 13,
+    marginTop: 6,
+    fontWeight: 'normal',
   },
 });

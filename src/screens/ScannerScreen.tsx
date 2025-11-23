@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resolveMetadataUnified } from '../services/unifiedMetadataResolver';
 import { insertCatalogItem } from '../database/catalogRepository';
+import { quickUPCLookup, handleWishlistMatch } from '../utils/journeyHelpers';
 import { UI_CONFIG, SCAN_CONFIG } from '../constants';
 import {
   MediaType,
@@ -35,6 +36,8 @@ export default function ScannerScreen() {
   const [showPreview, setShowPreview] = useState(false);
   const [currentMetadata, setCurrentMetadata] = useState<ItemMetadata | null>(null);
   const [currentUPC, setCurrentUPC] = useState<string>('');
+  const [wishlistMatch, setWishlistMatch] = useState(false);
+  const [alreadyOwned, setAlreadyOwned] = useState(false);
 
   const device = useCameraDevice('back');
   const navigation = useNavigation();
@@ -92,9 +95,23 @@ export default function ScannerScreen() {
         });
 
         console.log(`[Scanner] Item saved with ID: ${itemId}`);
+
+        // Auto-remove from wishlist if it was a match
+        if (wishlistMatch) {
+          const removed = await handleWishlistMatch(currentUPC);
+          if (removed) {
+            Alert.alert(
+              '🎯 Wishlist Item Found!',
+              'This item has been removed from your wishlist.',
+              [{ text: 'Great!' }]
+            );
+          }
+        }
+
         setShowPreview(false);
         setCurrentMetadata(null);
         setCurrentUPC('');
+        setWishlistMatch(false);
 
         if (rapidMode) {
           // Rapid Mode: Reset immediately for next scan
@@ -123,6 +140,8 @@ export default function ScannerScreen() {
     setShowPreview(false);
     setCurrentMetadata(null);
     setCurrentUPC('');
+    setWishlistMatch(false);
+    setAlreadyOwned(false);
     setIsProcessing(false);
     setLastScannedUPC(null);
   }, []);
@@ -150,6 +169,35 @@ export default function ScannerScreen() {
       console.log(`[Scanner] Detected UPC: ${upc}`);
 
       try {
+        // Quick lookup to check collection and wishlist
+        const lookup = await quickUPCLookup(upc);
+
+        // Check if already owned
+        if (lookup.owned) {
+          setAlreadyOwned(true);
+          Alert.alert(
+            'Already in Collection',
+            `You already own this item!\n\nTitle: ${lookup.item?.metadata.title}\nQuantity: ${lookup.quantity}`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setIsProcessing(false);
+                  setLastScannedUPC(null);
+                  setAlreadyOwned(false);
+                },
+              },
+            ]
+          );
+          return;
+        }
+
+        // Check wishlist
+        if (lookup.onWishlist) {
+          setWishlistMatch(true);
+          Vibration.vibrate([0, 100, 50, 100]); // Special vibration pattern for wishlist match
+        }
+
         // Show preview sheet immediately (loading state)
         setShowPreview(true);
 
@@ -158,6 +206,7 @@ export default function ScannerScreen() {
 
         if (!metadata) {
           setShowPreview(false);
+          setWishlistMatch(false);
           Alert.alert(
             'No Metadata Found',
             `Could not find information for UPC: ${upc}. Try scanning again or enter manually.`,
@@ -179,6 +228,7 @@ export default function ScannerScreen() {
       } catch (error) {
         console.error('[Scanner] Error:', error);
         setShowPreview(false);
+        setWishlistMatch(false);
         Alert.alert('Error', 'Failed to resolve metadata. Please try again.');
         setIsProcessing(false);
         setLastScannedUPC(null);
