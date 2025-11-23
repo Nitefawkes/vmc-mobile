@@ -4,8 +4,17 @@
 
 // API endpoints
 export const API_CONFIG = {
+  // Music APIs
   DISCOGS_BASE_URL: 'https://api.discogs.com',
   MUSICBRAINZ_BASE_URL: 'https://musicbrainz.org/ws/2',
+
+  // Movie APIs
+  OMDB_BASE_URL: 'https://www.omdbapi.com',
+  OMDB_API_KEY: '', // User needs to add their own key from omdbapi.com
+
+  // Video Game APIs
+  // Note: IGDB requires OAuth2, implement later if needed
+
   METADATA_RESOLVER_TIMEOUT: 10000, // 10 seconds
   MAX_RETRY_ATTEMPTS: 3,
 };

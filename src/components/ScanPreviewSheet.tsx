@@ -14,7 +14,17 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { ItemMetadata, MusicFormat, ItemCondition } from '../types';
+import {
+  ItemMetadata,
+  MediaType,
+  MusicFormat,
+  MovieFormat,
+  GamePlatform,
+  isMusicMetadata,
+  isMovieMetadata,
+  isGameMetadata,
+  getFormatOptions,
+} from '../types';
 import { UI_CONFIG } from '../constants';
 
 const { height } = Dimensions.get('window');
@@ -22,8 +32,9 @@ const { height } = Dimensions.get('window');
 interface ScanPreviewSheetProps {
   visible: boolean;
   metadata: ItemMetadata | null;
+  mediaType: MediaType;
   upc: string;
-  onSave: (format: MusicFormat) => void;
+  onSave: (format: MusicFormat | MovieFormat | GamePlatform) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -31,14 +42,34 @@ interface ScanPreviewSheetProps {
 export default function ScanPreviewSheet({
   visible,
   metadata,
+  mediaType,
   upc,
   onSave,
   onCancel,
   isLoading = false,
 }: ScanPreviewSheetProps) {
-  const [selectedFormat, setSelectedFormat] = React.useState<MusicFormat>(
-    MusicFormat.CASSETTE
-  );
+  // Get default format based on media type
+  const getDefaultFormat = (): MusicFormat | MovieFormat | GamePlatform => {
+    switch (mediaType) {
+      case MediaType.MUSIC:
+        return MusicFormat.CASSETTE;
+      case MediaType.MOVIE:
+        return MovieFormat.VHS;
+      case MediaType.VIDEO_GAME:
+        return GamePlatform.NES;
+      default:
+        return MusicFormat.CASSETTE;
+    }
+  };
+
+  const [selectedFormat, setSelectedFormat] = React.useState<
+    MusicFormat | MovieFormat | GamePlatform
+  >(getDefaultFormat());
+
+  // Update format when media type changes
+  React.useEffect(() => {
+    setSelectedFormat(getDefaultFormat());
+  }, [mediaType]);
 
   if (!metadata && !isLoading) {
     return null;
@@ -77,25 +108,82 @@ export default function ScanPreviewSheet({
                 <Text style={styles.title} numberOfLines={2}>
                   {metadata.title}
                 </Text>
-                <Text style={styles.artist} numberOfLines={1}>
-                  {metadata.artist}
-                </Text>
 
-                {metadata.album && (
-                  <Text style={styles.album} numberOfLines={1}>
-                    Album: {metadata.album}
-                  </Text>
+                {/* Media-specific fields */}
+                {isMusicMetadata(metadata) && (
+                  <>
+                    <Text style={styles.artist} numberOfLines={1}>
+                      {metadata.artist}
+                    </Text>
+                    {metadata.album && (
+                      <Text style={styles.album} numberOfLines={1}>
+                        Album: {metadata.album}
+                      </Text>
+                    )}
+                    <View style={styles.infoRow}>
+                      {metadata.year && (
+                        <Text style={styles.info}>{metadata.year}</Text>
+                      )}
+                      {metadata.label && (
+                        <Text style={styles.info}> • {metadata.label}</Text>
+                      )}
+                    </View>
+                  </>
                 )}
 
-                <View style={styles.infoRow}>
-                  {metadata.year && (
-                    <Text style={styles.info}>{metadata.year}</Text>
-                  )}
-                  {metadata.label && (
-                    <Text style={styles.info}> • {metadata.label}</Text>
-                  )}
-                </View>
+                {isMovieMetadata(metadata) && (
+                  <>
+                    {metadata.director && (
+                      <Text style={styles.artist} numberOfLines={1}>
+                        Director: {metadata.director}
+                      </Text>
+                    )}
+                    {metadata.studio && (
+                      <Text style={styles.album} numberOfLines={1}>
+                        Studio: {metadata.studio}
+                      </Text>
+                    )}
+                    <View style={styles.infoRow}>
+                      {metadata.year && (
+                        <Text style={styles.info}>{metadata.year}</Text>
+                      )}
+                      {metadata.rating && (
+                        <Text style={styles.info}> • {metadata.rating}</Text>
+                      )}
+                      {metadata.runtime && (
+                        <Text style={styles.info}> • {metadata.runtime} min</Text>
+                      )}
+                    </View>
+                  </>
+                )}
 
+                {isGameMetadata(metadata) && (
+                  <>
+                    {metadata.developer && (
+                      <Text style={styles.artist} numberOfLines={1}>
+                        Developer: {metadata.developer}
+                      </Text>
+                    )}
+                    {metadata.publisher && (
+                      <Text style={styles.album} numberOfLines={1}>
+                        Publisher: {metadata.publisher}
+                      </Text>
+                    )}
+                    <View style={styles.infoRow}>
+                      {metadata.year && (
+                        <Text style={styles.info}>{metadata.year}</Text>
+                      )}
+                      {metadata.rating && (
+                        <Text style={styles.info}> • {metadata.rating}</Text>
+                      )}
+                      {metadata.players && (
+                        <Text style={styles.info}> • {metadata.players}</Text>
+                      )}
+                    </View>
+                  </>
+                )}
+
+                {/* Genres (common to all types) */}
                 {metadata.genre && metadata.genre.length > 0 && (
                   <View style={styles.genreContainer}>
                     {metadata.genre.slice(0, 3).map((genre, index) => (
@@ -112,8 +200,12 @@ export default function ScanPreviewSheet({
               {/* Format Selector */}
               <View style={styles.formatSection}>
                 <Text style={styles.formatLabel}>Format:</Text>
-                <View style={styles.formatButtons}>
-                  {Object.values(MusicFormat).map((format) => (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.formatButtons}
+                >
+                  {getFormatOptions(mediaType).map((format) => (
                     <TouchableOpacity
                       key={format}
                       style={[
@@ -132,25 +224,46 @@ export default function ScanPreviewSheet({
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               </View>
 
-              {/* Track List Preview (if available) */}
-              {metadata.trackList && metadata.trackList.length > 0 && (
-                <View style={styles.trackListSection}>
-                  <Text style={styles.trackListTitle}>Track List:</Text>
-                  {metadata.trackList.slice(0, 5).map((track, index) => (
-                    <Text key={index} style={styles.trackText} numberOfLines={1}>
-                      {track}
-                    </Text>
-                  ))}
-                  {metadata.trackList.length > 5 && (
-                    <Text style={styles.moreTracksText}>
-                      +{metadata.trackList.length - 5} more tracks
-                    </Text>
-                  )}
-                </View>
-              )}
+              {/* Track List Preview (Music only) */}
+              {isMusicMetadata(metadata) &&
+                metadata.trackList &&
+                metadata.trackList.length > 0 && (
+                  <View style={styles.trackListSection}>
+                    <Text style={styles.trackListTitle}>Track List:</Text>
+                    {metadata.trackList.slice(0, 5).map((track, index) => (
+                      <Text key={index} style={styles.trackText} numberOfLines={1}>
+                        {track}
+                      </Text>
+                    ))}
+                    {metadata.trackList.length > 5 && (
+                      <Text style={styles.moreTracksText}>
+                        +{metadata.trackList.length - 5} more tracks
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+              {/* Cast List Preview (Movies only) */}
+              {isMovieMetadata(metadata) &&
+                metadata.cast &&
+                metadata.cast.length > 0 && (
+                  <View style={styles.trackListSection}>
+                    <Text style={styles.trackListTitle}>Cast:</Text>
+                    {metadata.cast.slice(0, 5).map((actor, index) => (
+                      <Text key={index} style={styles.trackText} numberOfLines={1}>
+                        {actor}
+                      </Text>
+                    ))}
+                    {metadata.cast.length > 5 && (
+                      <Text style={styles.moreTracksText}>
+                        +{metadata.cast.length - 5} more
+                      </Text>
+                    )}
+                  </View>
+                )}
             </ScrollView>
           ) : null}
 
@@ -283,8 +396,8 @@ const styles = StyleSheet.create({
   },
   formatButtons: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
+    paddingRight: 20,
   },
   formatButton: {
     paddingHorizontal: 16,

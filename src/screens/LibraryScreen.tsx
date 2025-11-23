@@ -17,14 +17,28 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getCatalogItems } from '../database/catalogRepository';
-import { CatalogItem, MusicFormat, ActionTag } from '../types';
+import {
+  CatalogItem,
+  MediaType,
+  MusicFormat,
+  MovieFormat,
+  GamePlatform,
+  ActionTag,
+  isMusicMetadata,
+  isMovieMetadata,
+  isGameMetadata,
+  getFormatOptions,
+} from '../types';
 import { UI_CONFIG } from '../constants';
 import { filterByFuzzySearch } from '../utils/fuzzySearch';
 
 export default function LibraryScreen() {
   const [allItems, setAllItems] = useState<CatalogItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFormat, setSelectedFormat] = useState<MusicFormat | 'ALL'>('ALL');
+  const [selectedMediaType, setSelectedMediaType] = useState<MediaType | 'ALL'>('ALL');
+  const [selectedFormat, setSelectedFormat] = useState<
+    MusicFormat | MovieFormat | GamePlatform | 'ALL'
+  >('ALL');
   const [selectedActionTag, setSelectedActionTag] = useState<ActionTag | 'ALL'>('ALL');
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
@@ -44,9 +58,19 @@ export default function LibraryScreen() {
     }, [])
   );
 
+  // Reset format filter when media type changes
+  useEffect(() => {
+    setSelectedFormat('ALL');
+  }, [selectedMediaType]);
+
   // Filter and search items
   const filteredItems = useMemo(() => {
     let result = allItems;
+
+    // Apply media type filter
+    if (selectedMediaType !== 'ALL') {
+      result = result.filter((item) => item.mediaType === selectedMediaType);
+    }
 
     // Apply format filter
     if (selectedFormat !== 'ALL') {
@@ -60,19 +84,11 @@ export default function LibraryScreen() {
 
     // Apply fuzzy search
     if (searchQuery.trim()) {
-      result = filterByFuzzySearch(
-        result.map((item) => ({
-          ...item,
-          artist: item.metadata.artist,
-          title: item.metadata.title,
-          album: item.metadata.album,
-        })),
-        searchQuery
-      );
+      result = filterByFuzzySearch(result, searchQuery);
     }
 
     return result;
-  }, [allItems, searchQuery, selectedFormat, selectedActionTag]);
+  }, [allItems, searchQuery, selectedMediaType, selectedFormat, selectedActionTag]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -80,50 +96,62 @@ export default function LibraryScreen() {
     setRefreshing(false);
   };
 
-  const renderItem = ({ item }: { item: CatalogItem }) => (
-    <TouchableOpacity
-      style={styles.itemCard}
-      onPress={() =>
-        navigation.navigate('ItemDetail' as never, { itemId: item.id } as never)
-      }
-    >
-      {item.metadata.coverArtUrl ? (
-        <Image
-          source={{ uri: item.metadata.coverArtUrl }}
-          style={styles.coverArt}
-        />
-      ) : (
-        <View style={styles.placeholderCover}>
-          <Text style={styles.placeholderText}>No Image</Text>
-        </View>
-      )}
+  const renderItem = ({ item }: { item: CatalogItem }) => {
+    // Get secondary text based on media type
+    let secondaryText = '';
+    if (isMusicMetadata(item.metadata)) {
+      secondaryText = item.metadata.artist;
+    } else if (isMovieMetadata(item.metadata)) {
+      secondaryText = item.metadata.director || 'Unknown Director';
+    } else if (isGameMetadata(item.metadata)) {
+      secondaryText = item.metadata.developer || item.metadata.publisher || 'Unknown';
+    }
 
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemTitle} numberOfLines={1}>
-          {item.metadata.title}
-        </Text>
-        <Text style={styles.itemArtist} numberOfLines={1}>
-          {item.metadata.artist}
-        </Text>
-        <Text style={styles.itemYear}>
-          {item.metadata.year || 'Year Unknown'} • {item.format}
-        </Text>
+    return (
+      <TouchableOpacity
+        style={styles.itemCard}
+        onPress={() =>
+          navigation.navigate('ItemDetail' as never, { itemId: item.id } as never)
+        }
+      >
+        {item.metadata.coverArtUrl ? (
+          <Image
+            source={{ uri: item.metadata.coverArtUrl }}
+            style={styles.coverArt}
+          />
+        ) : (
+          <View style={styles.placeholderCover}>
+            <Text style={styles.placeholderText}>No Image</Text>
+          </View>
+        )}
 
-        <View style={styles.tagContainer}>
-          <View
-            style={[
-              styles.tag,
-              item.actionTag === 'SELL' && styles.tagSell,
-              item.actionTag === 'DONATE' && styles.tagDonate,
-              item.actionTag === 'KEEP' && styles.tagKeep,
-            ]}
-          >
-            <Text style={styles.tagText}>{item.actionTag}</Text>
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemTitle} numberOfLines={1}>
+            {item.metadata.title}
+          </Text>
+          <Text style={styles.itemArtist} numberOfLines={1}>
+            {secondaryText}
+          </Text>
+          <Text style={styles.itemYear}>
+            {item.metadata.year || 'Year Unknown'} • {item.format}
+          </Text>
+
+          <View style={styles.tagContainer}>
+            <View
+              style={[
+                styles.tag,
+                item.actionTag === 'SELL' && styles.tagSell,
+                item.actionTag === 'DONATE' && styles.tagDonate,
+                item.actionTag === 'KEEP' && styles.tagKeep,
+              ]}
+            >
+              <Text style={styles.tagText}>{item.actionTag}</Text>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -131,11 +159,51 @@ export default function LibraryScreen() {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Fuzzy search: artist, title, album..."
+          placeholder="Search across all media types..."
           placeholderTextColor={UI_CONFIG.THEME.TEXT_SECONDARY}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+      </View>
+
+      {/* Media Type Filter */}
+      <View style={styles.filtersContainer}>
+        <Text style={styles.filterLabel}>Media Type:</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
+          <TouchableOpacity
+            style={[styles.filterChip, selectedMediaType === 'ALL' && styles.filterChipActive]}
+            onPress={() => setSelectedMediaType('ALL')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                selectedMediaType === 'ALL' && styles.filterChipTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          {Object.values(MediaType).map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[styles.filterChip, selectedMediaType === type && styles.filterChipActive]}
+              onPress={() => setSelectedMediaType(type)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedMediaType === type && styles.filterChipTextActive,
+                ]}
+              >
+                {type}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Format Filters */}
@@ -150,21 +218,55 @@ export default function LibraryScreen() {
             style={[styles.filterChip, selectedFormat === 'ALL' && styles.filterChipActive]}
             onPress={() => setSelectedFormat('ALL')}
           >
-            <Text style={[styles.filterChipText, selectedFormat === 'ALL' && styles.filterChipTextActive]}>
+            <Text
+              style={[styles.filterChipText, selectedFormat === 'ALL' && styles.filterChipTextActive]}
+            >
               All
             </Text>
           </TouchableOpacity>
-          {Object.values(MusicFormat).map((format) => (
-            <TouchableOpacity
-              key={format}
-              style={[styles.filterChip, selectedFormat === format && styles.filterChipActive]}
-              onPress={() => setSelectedFormat(format)}
-            >
-              <Text style={[styles.filterChipText, selectedFormat === format && styles.filterChipTextActive]}>
-                {format}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {selectedMediaType !== 'ALL'
+            ? getFormatOptions(selectedMediaType).map((format) => (
+                <TouchableOpacity
+                  key={format}
+                  style={[
+                    styles.filterChip,
+                    selectedFormat === format && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedFormat(format)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedFormat === format && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {format}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            : [
+                ...Object.values(MusicFormat),
+                ...Object.values(MovieFormat),
+                ...Object.values(GamePlatform),
+              ].map((format) => (
+                <TouchableOpacity
+                  key={format}
+                  style={[
+                    styles.filterChip,
+                    selectedFormat === format && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedFormat(format)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedFormat === format && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {format}
+                  </Text>
+                </TouchableOpacity>
+              ))}
         </ScrollView>
       </View>
 
@@ -199,7 +301,10 @@ export default function LibraryScreen() {
       </View>
 
       {/* Results Count */}
-      {(searchQuery || selectedFormat !== 'ALL' || selectedActionTag !== 'ALL') && (
+      {(searchQuery ||
+        selectedMediaType !== 'ALL' ||
+        selectedFormat !== 'ALL' ||
+        selectedActionTag !== 'ALL') && (
         <View style={styles.resultsCount}>
           <Text style={styles.resultsCountText}>
             {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'} found

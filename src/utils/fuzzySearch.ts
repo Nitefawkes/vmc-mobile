@@ -1,7 +1,15 @@
 /**
  * Fuzzy Search Utility
- * Simple fuzzy string matching for library search
+ * Multi-media fuzzy string matching for library search
+ * Supports Music, Movies, and Video Games
  */
+
+import {
+  CatalogItem,
+  isMusicMetadata,
+  isMovieMetadata,
+  isGameMetadata,
+} from '../types';
 
 /**
  * Calculate similarity score between two strings (0-1)
@@ -50,32 +58,64 @@ export function fuzzyMatch(query: string, target: string): number {
 
 /**
  * Search through multiple fields with weighted scoring
+ * Handles all media types (Music, Movies, Video Games)
  */
-export function fuzzySearchItem(
-  query: string,
-  item: {
-    artist: string;
-    title: string;
-    album?: string;
-  }
-): number {
+export function fuzzySearchItem(query: string, item: CatalogItem): number {
   if (!query || query.trim() === '') return 1;
 
-  const artistScore = fuzzyMatch(query, item.artist) * 1.2; // Artist weighted higher
-  const titleScore = fuzzyMatch(query, item.title) * 1.0;
-  const albumScore = item.album ? fuzzyMatch(query, item.album) * 0.8 : 0;
+  const scores: number[] = [];
 
-  return Math.max(artistScore, titleScore, albumScore);
+  // Title (always present, high weight)
+  scores.push(fuzzyMatch(query, item.metadata.title) * 1.2);
+
+  // Media-specific fields
+  if (isMusicMetadata(item.metadata)) {
+    // Music: artist (highest), album, label
+    scores.push(fuzzyMatch(query, item.metadata.artist) * 1.5);
+    if (item.metadata.album) {
+      scores.push(fuzzyMatch(query, item.metadata.album) * 1.0);
+    }
+    if (item.metadata.label) {
+      scores.push(fuzzyMatch(query, item.metadata.label) * 0.8);
+    }
+  } else if (isMovieMetadata(item.metadata)) {
+    // Movies: director (high), studio, cast
+    if (item.metadata.director) {
+      scores.push(fuzzyMatch(query, item.metadata.director) * 1.3);
+    }
+    if (item.metadata.studio) {
+      scores.push(fuzzyMatch(query, item.metadata.studio) * 1.0);
+    }
+    if (item.metadata.cast) {
+      // Search through cast members
+      const castScores = item.metadata.cast.map((actor) => fuzzyMatch(query, actor));
+      scores.push(Math.max(...castScores) * 1.1);
+    }
+  } else if (isGameMetadata(item.metadata)) {
+    // Games: developer (high), publisher
+    if (item.metadata.developer) {
+      scores.push(fuzzyMatch(query, item.metadata.developer) * 1.3);
+    }
+    if (item.metadata.publisher) {
+      scores.push(fuzzyMatch(query, item.metadata.publisher) * 1.0);
+    }
+  }
+
+  // Format (low weight)
+  scores.push(fuzzyMatch(query, item.format) * 0.6);
+
+  // Return best match
+  return Math.max(...scores);
 }
 
 /**
- * Filter and sort items by fuzzy search relevance
+ * Filter and sort catalog items by fuzzy search relevance
  */
-export function filterByFuzzySearch<T extends { artist: string; title: string; album?: string }>(
-  items: T[],
+export function filterByFuzzySearch(
+  items: CatalogItem[],
   query: string,
   threshold: number = 0.3
-): T[] {
+): CatalogItem[] {
   if (!query || query.trim() === '') {
     return items;
   }

@@ -5,23 +5,33 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Vibration, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, Alert, Vibration, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { resolveMetadata } from '../services/metadataResolver';
+import { resolveMetadataUnified } from '../services/unifiedMetadataResolver';
 import { insertCatalogItem } from '../database/catalogRepository';
 import { UI_CONFIG, SCAN_CONFIG } from '../constants';
-import { MusicFormat, ItemCondition, ActionTag, ItemMetadata } from '../types';
+import {
+  MediaType,
+  MusicFormat,
+  MovieFormat,
+  GamePlatform,
+  ItemCondition,
+  ActionTag,
+  ItemMetadata,
+} from '../types';
 import ScanPreviewSheet from '../components/ScanPreviewSheet';
 
 const RAPID_MODE_KEY = '@rapid_mode_enabled';
+const MEDIA_TYPE_KEY = '@selected_media_type';
 
 export default function ScannerScreen() {
   const [hasPermission, setHasPermission] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastScannedUPC, setLastScannedUPC] = useState<string | null>(null);
   const [rapidMode, setRapidMode] = useState(SCAN_CONFIG.RAPID_MODE_DEFAULT);
+  const [selectedMediaType, setSelectedMediaType] = useState<MediaType>(MediaType.MUSIC);
   const [showPreview, setShowPreview] = useState(false);
   const [currentMetadata, setCurrentMetadata] = useState<ItemMetadata | null>(null);
   const [currentUPC, setCurrentUPC] = useState<string>('');
@@ -29,11 +39,16 @@ export default function ScannerScreen() {
   const device = useCameraDevice('back');
   const navigation = useNavigation();
 
-  // Load rapid mode preference
+  // Load rapid mode preference and media type
   useEffect(() => {
     AsyncStorage.getItem(RAPID_MODE_KEY).then((value) => {
       if (value !== null) {
         setRapidMode(value === 'true');
+      }
+    });
+    AsyncStorage.getItem(MEDIA_TYPE_KEY).then((value) => {
+      if (value !== null) {
+        setSelectedMediaType(value as MediaType);
       }
     });
   }, []);
@@ -53,14 +68,21 @@ export default function ScannerScreen() {
     await AsyncStorage.setItem(RAPID_MODE_KEY, String(newValue));
   }, [rapidMode]);
 
+  // Select media type
+  const selectMediaType = useCallback(async (mediaType: MediaType) => {
+    setSelectedMediaType(mediaType);
+    await AsyncStorage.setItem(MEDIA_TYPE_KEY, mediaType);
+  }, []);
+
   // Handle save from preview sheet
   const handleSave = useCallback(
-    async (format: MusicFormat) => {
+    async (format: MusicFormat | MovieFormat | GamePlatform) => {
       if (!currentMetadata || !currentUPC) return;
 
       try {
         const itemId = await insertCatalogItem({
           upc: currentUPC,
+          mediaType: selectedMediaType,
           metadata: currentMetadata,
           format,
           condition: ItemCondition.GOOD,
@@ -92,7 +114,7 @@ export default function ScannerScreen() {
         setLastScannedUPC(null);
       }
     },
-    [currentMetadata, currentUPC, rapidMode, navigation]
+    [currentMetadata, currentUPC, rapidMode, selectedMediaType, navigation]
   );
 
   // Handle cancel from preview sheet
@@ -130,8 +152,8 @@ export default function ScannerScreen() {
         // Show preview sheet immediately (loading state)
         setShowPreview(true);
 
-        // Resolve metadata
-        const metadata = await resolveMetadata(upc);
+        // Resolve metadata using unified resolver with selected media type
+        const metadata = await resolveMetadataUnified(upc, selectedMediaType);
 
         if (!metadata) {
           setShowPreview(false);
@@ -161,7 +183,7 @@ export default function ScannerScreen() {
         setLastScannedUPC(null);
       }
     },
-    [isProcessing, lastScannedUPC, showPreview]
+    [isProcessing, lastScannedUPC, showPreview, selectedMediaType]
   );
 
   // Code scanner configuration
@@ -194,6 +216,36 @@ export default function ScannerScreen() {
         isActive={!isProcessing && !showPreview}
         codeScanner={codeScanner}
       />
+
+      {/* Media Type Selector */}
+      <View style={styles.mediaTypeSelectorContainer}>
+        <Text style={styles.mediaTypeLabel}>Scanning for:</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.mediaTypeScroll}
+        >
+          {Object.values(MediaType).map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.mediaTypeChip,
+                selectedMediaType === type && styles.mediaTypeChipActive,
+              ]}
+              onPress={() => selectMediaType(type)}
+            >
+              <Text
+                style={[
+                  styles.mediaTypeChipText,
+                  selectedMediaType === type && styles.mediaTypeChipTextActive,
+                ]}
+              >
+                {type}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Rapid Mode Toggle */}
       <View style={styles.rapidModeContainer}>
@@ -229,6 +281,7 @@ export default function ScannerScreen() {
       <ScanPreviewSheet
         visible={showPreview}
         metadata={currentMetadata}
+        mediaType={selectedMediaType}
         upc={currentUPC}
         onSave={handleSave}
         onCancel={handleCancel}
@@ -249,9 +302,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 100,
   },
-  rapidModeContainer: {
+  mediaTypeSelectorContainer: {
     position: 'absolute',
     top: 60,
+    left: 20,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(26, 26, 46, 0.9)',
+    borderRadius: 15,
+    padding: 12,
+  },
+  mediaTypeLabel: {
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  mediaTypeScroll: {
+    gap: 8,
+  },
+  mediaTypeChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: UI_CONFIG.THEME.SECONDARY,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  mediaTypeChipActive: {
+    backgroundColor: UI_CONFIG.THEME.ACCENT,
+    borderColor: UI_CONFIG.THEME.SUCCESS,
+  },
+  mediaTypeChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: UI_CONFIG.THEME.TEXT_SECONDARY,
+  },
+  mediaTypeChipTextActive: {
+    color: UI_CONFIG.THEME.TEXT_PRIMARY,
+    fontWeight: 'bold',
+  },
+  rapidModeContainer: {
+    position: 'absolute',
+    top: 150,
     right: 20,
     zIndex: 10,
   },
