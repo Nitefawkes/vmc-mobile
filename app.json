@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Vintage Music Catalog",
+    "slug": "vmc-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vmc.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan UPC barcodes on vintage music items.",
+        "NSMicrophoneUsageDescription": "This app does not use the microphone.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save album covers and item photos."
+      }
+    },
+    "android": {
+      "package": "com.vmc.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera to scan UPC barcodes.",
+          "enableCodeScanner": true
+        }
+      ]
+    ]
+  }
+}
